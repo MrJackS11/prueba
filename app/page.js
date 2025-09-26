@@ -16,23 +16,24 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col space-y-4">
-          <Link href="/cargos" legacyBehavior>
-            {/* Botón con gradiente de color Gemini/Abstracto */}
-            <a className="w-full px-8 py-3 text-lg font-bold rounded-xl text-white 
+          <Link
+            href="/cargos"
+            className="w-full px-8 py-3 text-lg font-bold rounded-xl text-white 
                       bg-gradient-to-r from-blue-600 to-teal-500 
                       hover:from-blue-700 hover:to-teal-600 
-                      shadow-lg transition duration-300 transform hover:scale-[1.02]">
-              Ir a CRUD de Cargos
-            </a>
+                      shadow-lg transition duration-300 transform hover:scale-[1.02]"
+          >
+            Ir a CRUD de Cargos
           </Link>
           
           {/* Aquí se agregarán los enlaces a otros CRUDs a medida que los crees */}
-          <Link href="/usuarios" legacyBehavior>
-            <a className="w-full px-8 py-3 text-lg font-bold rounded-xl text-gray-700 
+          <Link
+            href="/usuarios"
+            className="w-full px-8 py-3 text-lg font-bold rounded-xl text-gray-700 
                       bg-white border-2 border-gray-300 
-                      hover:bg-gray-100 transition duration-300">
-                Ir a CRUD de Usuarios
-            </a>
+                      hover:bg-gray-100 transition duration-300"
+          >
+            Ir a CRUD de Usuarios
           </Link>
         </div>
       </div>
