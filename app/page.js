@@ -1,42 +1,67 @@
-// app/page.js 
-import Link from 'next/link';
+import Link from 'next/link'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Users, Briefcase, Clock, Link as LinkIcon, ClipboardList } from 'lucide-react'
+
+// Array de módulos para generar el menú
+const modules = [
+  { 
+    name: "CRUD de Usuarios", 
+    description: "Gestión completa de empleados.", 
+    href: "/usuarios",
+    icon: Users
+  },
+  { 
+    name: "CRUD de Cargos", 
+    description: "Administración de los puestos de trabajo.", 
+    href: "/cargos",
+    icon: Briefcase
+  },
+  { 
+    name: "CRUD de Horarios", 
+    description: "Creación y edición de turnos de entrada/salida.", 
+    href: "/horarios",
+    icon: Clock
+  },
+  { 
+    name: "Asignación Usuario-Cargo-Horario", 
+    description: "Módulo para enlazar un empleado a un cargo y horario específico.", 
+    href: "/usuarios_cargos",
+    icon: LinkIcon
+  },
+  { 
+    name: "Reporte RPC", 
+    description: "Consulta de usuarios filtrada por cargo (usa función de Supabase).", 
+    href: "/consultas",
+    icon: ClipboardList
+  },
+]
 
 export default function Home() {
   return (
-    // CAMBIO CLAVE: Fondo con gradiente sutil para el cuerpo
-    <main className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-gray-200">
+    <main className="flex min-h-screen flex-col items-center p-12 bg-gray-50">
+      <h1 className="text-4xl font-bold mb-4 text-gray-800">Panel de Administración</h1>
+      <p className="text-xl text-gray-500 mb-10">Selecciona un módulo para gestionar los datos del sistema.</p>
       
-      {/* Contenedor central con estilo moderno */}
-      <div className="p-10 bg-white shadow-2xl rounded-xl text-center max-w-xl border-t-4 border-blue-500">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-6 tracking-tight">
-          Menú Principal de CRUDs
-        </h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Selecciona una tabla para gestionar sus datos.
-        </p>
-
-        <div className="flex flex-col space-y-4">
-          <Link
-            href="/cargos"
-            className="w-full px-8 py-3 text-lg font-bold rounded-xl text-white 
-                      bg-gradient-to-r from-blue-600 to-teal-500 
-                      hover:from-blue-700 hover:to-teal-600 
-                      shadow-lg transition duration-300 transform hover:scale-[1.02]"
-          >
-            Ir a CRUD de Cargos
-          </Link>
-          
-          {/* Aquí se agregarán los enlaces a otros CRUDs a medida que los crees */}
-          <Link
-            href="/usuarios"
-            className="w-full px-8 py-3 text-lg font-bold rounded-xl text-gray-700 
-                      bg-white border-2 border-gray-300 
-                      hover:bg-gray-100 transition duration-300"
-          >
-            Ir a CRUD de Usuarios
-          </Link>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+        {modules.map((module) => {
+          const Icon = module.icon
+          return (
+            <Link key={module.name} href={module.href}>
+              <Card className="hover:shadow-lg transition-shadow duration-300 h-full cursor-pointer border-l-4 border-l-primary/70">
+                <CardHeader className="flex flex-row items-center space-x-4">
+                  <Icon className="h-8 w-8 text-primary" />
+                  <div>
+                    <CardTitle className="text-xl">{module.name}</CardTitle>
+                    <CardDescription>{module.description}</CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+          )
+        })}
       </div>
+      
+      <p className="mt-10 text-sm text-gray-400">Desarrollado con Next.js, Supabase y shadcn/ui.</p>
     </main>
-  );
+  )
 }

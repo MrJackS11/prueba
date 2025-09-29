@@ -1,157 +1,170 @@
-// app/horarios/page.js
 'use client'
-
 import { useState, useEffect } from 'react'
-import { supabase } from '../../utils/supabase.js' // ¡Ruta Corregida!
-
-const TABLE_NAME = 'horarios';
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Edit, Trash2, Save, X, Clock } from 'lucide-react'
+import { obtenerHorarios, crearHorario, actualizarHorario, eliminarHorario } from '../utils/horarios' 
 
 export default function HorariosCRUD() {
-  // [ESTADOS Y FUNCIONES - ADAPTAR A HORARIOS]
   const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true) 
-  const [newIngreso, setNewIngreso] = useState('')
-  const [newSalida, setNewSalida] = useState('')
+  const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
   const [editIngreso, setEditIngreso] = useState('')
   const [editSalida, setEditSalida] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [newIngreso, setNewIngreso] = useState('')
+  const [newSalida, setNewSalida] = useState('')
 
-  // LECTURA (R)
   const fetchData = async () => {
     setLoading(true)
-    const { data: horarioData, error } = await supabase
-      .from(TABLE_NAME) 
-      .select('id, hora_ingreso, hora_salida') 
-      .order('id', { ascending: false })
-
+    const { data: horariosData, error } = await obtenerHorarios()
     if (error) {
-      console.error(`Error fetching ${TABLE_NAME}:`, error)
+      toast.error('Error al cargar horarios: ' + error.message)
     } else {
-      setData(horarioData)
+      setData(horariosData || [])
     }
     setLoading(false)
   }
 
   useEffect(() => {
     fetchData()
-  }, []) 
+  }, [])
 
-  // CREACIÓN (C)
-  const addItem = async (e) => {
+  const handleCrear = async (e) => {
     e.preventDefault()
-    if (!newIngreso.trim() || !newSalida.trim()) return 
-    
-    const { error } = await supabase
-      .from(TABLE_NAME) 
-      .insert({ hora_ingreso: newIngreso, hora_salida: newSalida })
+    if (!newIngreso || !newSalida) return 
 
+    const { error } = await crearHorario({ hora_ingreso: newIngreso, hora_salida: newSalida })
     if (error) {
-      console.error(`Error adding ${TABLE_NAME}:`, error)
-      alert(`Error al agregar: ${error.message}.`)
+      toast.error('Error al crear horario: ' + error.message)
     } else {
+      toast.success('Horario creado correctamente.')
       setNewIngreso('')
       setNewSalida('')
-      fetchData() 
+      setModalOpen(false)
+      fetchData()
     }
   }
 
-  // ACTUALIZACIÓN (U)
   const startEdit = (item) => {
     setEditingId(item.id)
-    // Supabase a veces devuelve la hora con segundos, ajustamos para la edición
-    setEditIngreso(item.hora_ingreso ? item.hora_ingreso.substring(0, 5) : '') 
-    setEditSalida(item.hora_salida ? item.hora_salida.substring(0, 5) : '')
+    setEditIngreso(item.hora_ingreso.substring(0, 5)) 
+    setEditSalida(item.hora_salida.substring(0, 5))
   }
 
   const saveEdit = async (id) => {
-    if (!editIngreso.trim() || !editSalida.trim()) return
-    
-    const { error } = await supabase
-      .from(TABLE_NAME) 
-      .update({ hora_ingreso: editIngreso, hora_salida: editSalida }) 
-      .eq('id', id)
-      
+    if (!editIngreso || !editSalida) return
+
+    const { error } = await actualizarHorario(id, { hora_ingreso: editIngreso, hora_salida: editSalida })
     if (error) {
-      console.error(`Error updating ${TABLE_NAME}:`, error)
+      toast.error('Error al actualizar: ' + error.message)
     } else {
+      toast.success('Horario actualizado correctamente.')
       setEditingId(null)
       fetchData()
     }
   }
-  const cancelEdit = () => setEditingId(null)
 
-  // ELIMINACIÓN (D)
   const deleteItem = async (id) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este horario?')) return
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este horario?')) return
 
-    const { error } = await supabase
-      .from(TABLE_NAME) 
-      .delete()
-      .eq('id', id) 
-
+    const { error } = await eliminarHorario(id)
     if (error) {
-      console.error(`Error deleting ${TABLE_NAME}:`, error)
+      toast.error('Error al eliminar: ' + error.message)
     } else {
+      toast.success('Horario eliminado correctamente.')
       fetchData() 
     }
   }
 
-  // RENDERIZADO
+  const formatTime = (time) => time ? time.substring(0, 5) : 'N/A';
+
   return (
-    <main className="flex min-h-[calc(100vh-4rem)] flex-col items-center p-8 bg-gray-100">
-      <h1 className="text-5xl font-extrabold text-blue-800 mb-10 mt-4">
-        CRUD de Horarios
-      </h1>
-      
-      {/* Formulario para CREAR */}
-      <section className="w-full max-w-lg p-6 bg-white rounded-xl shadow-2xl mb-10 border border-t-4 border-blue-500">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Crear Nuevo Horario</h2>
-        <form onSubmit={addItem} className="flex flex-col space-y-4">
-          <input type="time" value={newIngreso} onChange={(e) => setNewIngreso(e.target.value)} placeholder="Hora de Ingreso (HH:MM)" className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-700" required />
-          <input type="time" value={newSalida} onChange={(e) => setNewSalida(e.target.value)} placeholder="Hora de Salida (HH:MM)" className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-700" required />
-          <button type="submit" className="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 shadow-md">
-            Crear Horario
-          </button>
-        </form>
-      </section>
+    <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50">
+      <Card className="w-full max-w-lg shadow-xl">
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle className="text-2xl flex items-center space-x-2"><Clock className="h-6 w-6"/><span>Gestión de Horarios</span></CardTitle>
+          <Button onClick={() => setModalOpen(true)}>Crear Horario</Button>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-center py-8">Cargando horarios...</p>
+          ) : data.length === 0 ? (
+            <p className="text-center py-8 text-gray-500">No hay horarios registrados.</p>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">ID</TableHead>
+                    <TableHead>Ingreso</TableHead>
+                    <TableHead>Salida</TableHead>
+                    <TableHead className="text-right w-[120px]">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.id}</TableCell>
+                      <TableCell>
+                        {editingId === item.id ? (
+                          <Input type="time" value={editIngreso} onChange={(e) => setEditIngreso(e.target.value)} className="h-8" />
+                        ) : (
+                          formatTime(item.hora_ingreso)
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingId === item.id ? (
+                          <Input type="time" value={editSalida} onChange={(e) => setEditSalida(e.target.value)} className="h-8" />
+                        ) : (
+                          formatTime(item.hora_salida) 
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {editingId === item.id ? (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => saveEdit(item.id)} title="Guardar"><Save className="h-4 w-4 text-green-600" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => setEditingId(null)} title="Cancelar"><X className="h-4 w-4 text-gray-500" /></Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => startEdit(item)} title="Editar"><Edit className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)} title="Eliminar"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Lista */}
-      <section className="w-full max-w-lg p-6 bg-white rounded-xl shadow-2xl border border-gray-200">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Lista de Horarios</h2>
-        
-        {loading && <p className="text-center text-gray-500 p-4">Cargando horarios...</p>}
-        {!loading && data.length === 0 && <p className="text-center text-gray-600 p-4">No hay horarios. ¡Agrega uno!</p>}
-
-        <ul className="space-y-4">
-          {data.map((item) => (
-            <li key={item.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              {editingId === item.id ? (
-                // Edición
-                <div className="flex-1 w-full space-y-2">
-                  <input type="time" value={editIngreso} onChange={(e) => setEditIngreso(e.target.value)} className="p-2 border border-blue-400 rounded w-full text-gray-800 focus:ring-blue-500" placeholder="Ingreso" />
-                  <input type="time" value={editSalida} onChange={(e) => setEditSalida(e.target.value)} className="p-2 border border-blue-400 rounded w-full text-gray-800 focus:ring-blue-500" placeholder="Salida" />
-                  <div className="space-x-2 pt-2">
-                    <button onClick={() => saveEdit(item.id)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">Guardar</button>
-                    <button onClick={cancelEdit} className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium">Cancelar</button>
-                  </div>
-                </div>
-              ) : (
-                // Vista normal
-                <>
-                  <div className="mb-2 sm:mb-0">
-                    <p className="font-bold text-lg text-gray-900">Ingreso: {item.hora_ingreso ? item.hora_ingreso.substring(0, 5) : 'N/A'}</p> 
-                    <p className="text-sm text-gray-600">Salida: {item.hora_salida ? item.hora_salida.substring(0, 5) : 'N/A'}</p>
-                  </div>
-                  <div className="space-x-2 flex-shrink-0">
-                    <button onClick={() => startEdit(item)} className="px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition shadow-md">Actualizar</button>
-                    <button onClick={() => deleteItem(item.id)} className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md">Eliminar</button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* Modal de Creación */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Definir Nuevo Horario</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCrear} className="space-y-4">
+            <label htmlFor="new-ingreso" className="text-sm font-medium">Hora de Ingreso</label>
+            <Input id="new-ingreso" type="time" value={newIngreso} onChange={(e) => setNewIngreso(e.target.value)} required />
+            
+            <label htmlFor="new-salida" className="text-sm font-medium">Hora de Salida</label>
+            <Input id="new-salida" type="time" value={newSalida} onChange={(e) => setNewSalida(e.target.value)} required />
+            
+            <DialogFooter>
+              <Button type="submit">Guardar Horario</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

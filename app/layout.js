@@ -1,23 +1,24 @@
-// app/layout.js (Modificado)
+// app/layout.js
 
-// Importa el nuevo componente Navbar
-import Navbar from './components/Navbar'; 
-import './globals.css'; 
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner"; 
+import Navbar from "./components/Navbar"; // <--- RUTA CORREGIDA: ./components/navbar
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: 'CRUD App Tarea 5',
-  description: 'Gestión de tablas de Supabase.',
+  title: "Gestión de Personal Supabase/Next.js",
+  description: "Módulos de CRUD y Reportes para el Diseño Web II",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
-        {/* Agrega la barra de navegación aquí */}
+      <body className={inter.className}>
         <Navbar />
-
-        {/* El {children} es el contenido de la página actual */}
-        {children} 
+        {children}
+        <Toaster richColors position="top-right" /> 
       </body>
     </html>
   );
