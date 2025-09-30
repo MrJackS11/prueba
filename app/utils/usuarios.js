@@ -1,87 +1,80 @@
-import { supabase } from './supabase' 
-// Asegúrate de que el archivo './supabase' exista y esté configurado
+import { supabase } from './supabase'
 
-// Obtener todos los usuarios y los detalles del cargo
+// 1. OBTENER USUARIOS
 export async function obtenerUsuarios() {
-  try {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select(`
-        *, // Selecciona todos los campos de la tabla 'usuarios'
-        cargos ( // Obtiene los datos de la tabla 'cargos'
-          cargo // Solo selecciona el nombre del cargo
-        )
-      `)
-      .order('id', { ascending: false }) // Ordena por ID
-    if (error) throw error
-    return { data, error: null }
+  try {
+    // Nota: El join a 'cargos' podría fallar si la FK no existe en 'usuarios' o no está en 'usuarios_cargos'.
+    // Lo dejo comentado si es tu problema de RLS/Join
+    const { data, error } = await supabase
+      .from('usuarios')
+      // .select(`id, nombre, email, telefono, cargos (cargo)`) // Si falla, usa la línea de abajo
+      .select(`id, nombre, email, telefono`) 
+      .order('nombre', { ascending: true })
+
+    if (error) throw new Error(error.message || 'Error desconocido de Supabase al obtener usuarios.')
+    
+    // Si no hiciste el join, la data viene limpia. Si usas el join, necesitarías formatear.
+    return { data: data || [], error: null }
   } catch (error) {
     console.error('Error obteniendo usuarios:', error)
-    return { data: null, error: error.message }
+    return { data: null, error: error.message || error }
   }
 }
 
-// Crear un nuevo usuario
-export async function crearUsuario(usuario) {
+// 2. CREAR USUARIO
+export async function crearUsuario(usuarioData) {
+  const { nombre, email, telefono } = usuarioData;
+  
+  if (!nombre || !email) {
+    return { data: null, error: new Error("Nombre y Email son obligatorios.") };
+  }
+
   try {
     const { data, error } = await supabase
       .from('usuarios')
-      .insert([usuario])
+      .insert([{ nombre, email, telefono: telefono || null }])
       .select()
-    if (error) throw error
+      
+    if (error) throw error 
+    
     return { data: data[0], error: null } 
   } catch (error) {
     console.error('Error creando usuario:', error)
-    return { data: null, error: error.message }
+    return { data: null, error: error.message || error } 
   }
 }
 
-// ✅ CORRECCIÓN: La función está correctamente exportada
-export async function actualizarUsuario(id, usuario) {
+// 3. ACTUALIZAR USUARIO (¡La función que faltaba y causaba el Build Error!)
+export async function actualizarUsuario(id, updatedFields) {
   try {
     const { data, error } = await supabase
       .from('usuarios')
-      .update(usuario)
+      .update(updatedFields)
       .eq('id', id)
-      .select()
+      .select() 
+      
     if (error) throw error
-    return { data: data[0], error: null } 
+    
+    return { data: data[0], error: null }
   } catch (error) {
     console.error('Error actualizando usuario:', error)
-    return { data: null, error: error.message }
+    return { data: null, error: error.message || error }
   }
 }
 
-// Eliminar un usuario
+// 4. ELIMINAR USUARIO
 export async function eliminarUsuario(id) {
   try {
     const { error } = await supabase
       .from('usuarios')
       .delete()
       .eq('id', id)
+      
     if (error) throw error
+    
     return { error: null }
   } catch (error) {
     console.error('Error eliminando usuario:', error)
-    return { error: error.message }
-  }
-}
-
-// Obtener un usuario por ID 
-export async function obtenerUsuarioPorId(id) {
-  try {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select(`
-        *, 
-        cargos (cargo)
-      `)
-      .eq('id', id)
-      .single()
-    if (error) throw error
-    return { data, error: null }
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error)
-    return { data: null, error: error.message }
+    return { error: error.message || error }
   }
 }

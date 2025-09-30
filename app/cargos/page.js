@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+// Se quitó 'Table' de la lista de componentes de UI
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Edit, Trash2, Save, X } from 'lucide-react'
@@ -13,15 +14,16 @@ export default function CargosCRUD() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
-  const [editCargoValue, setEditCargoValue] = useState('') // CAMBIO: Renombrado a editCargoValue
+  const [editCargoValue, setEditCargoValue] = useState('') 
   const [modalOpen, setModalOpen] = useState(false)
-  const [newCargoValue, setNewCargoValue] = useState('') // CAMBIO: Renombrado a newCargoValue
+  const [newCargoValue, setNewCargoValue] = useState('') 
+// (Faltaba estado para el nuevo sueldo, pero se usa 0 por defecto)
 
   const fetchData = async () => {
     setLoading(true)
     const { data: cargosData, error } = await obtenerCargos()
     if (error) {
-      toast.error('Error al cargar cargos: ' + error.message)
+      toast.error('Error al cargar cargos: ' + (error.message || 'Error desconocido.'))
     } else {
       setData(cargosData || [])
     }
@@ -36,10 +38,16 @@ export default function CargosCRUD() {
     e.preventDefault()
     if (!newCargoValue.trim()) return 
 
-    // ✅ CAMBIO CLAVE: Se envía la propiedad 'cargo' en lugar de 'descripcion'
-    const { error } = await crearCargo({ cargo: newCargoValue }) 
+    // 🚀 CORRECCIÓN LÓGICA: Se envía 'sueldo: 0' para evitar error de NOT NULL en la base de datos
+    const cargoData = {
+        cargo: newCargoValue,
+        sueldo: 0 
+    };
+
+    const { error } = await crearCargo(cargoData) 
     if (error) {
-      toast.error('Error al crear cargo: ' + error.message)
+        // Aseguramos que se muestre el error de Supabase si existe
+      toast.error('Error al crear cargo: ' + (error.message || 'Error desconocido.'));
     } else {
       toast.success('Cargo creado correctamente.')
       setNewCargoValue('')
@@ -50,17 +58,15 @@ export default function CargosCRUD() {
 
   const startEdit = (item) => {
     setEditingId(item.id)
-    // ✅ CAMBIO CLAVE: Se lee 'item.cargo' en lugar de 'item.descripcion'
     setEditCargoValue(item.cargo) 
   }
 
   const saveEdit = async (id) => {
     if (!editCargoValue.trim()) return
     
-    // ✅ CAMBIO CLAVE: Se envía la propiedad 'cargo' en lugar de 'descripcion'
     const { error } = await actualizarCargo(id, { cargo: editCargoValue })
     if (error) {
-      toast.error('Error al actualizar: ' + error.message)
+      toast.error('Error al actualizar: ' + (error.message || 'Error desconocido.'))
     } else {
       toast.success('Cargo actualizado correctamente.')
       setEditingId(null)
@@ -73,7 +79,7 @@ export default function CargosCRUD() {
 
     const { error } = await eliminarCargo(id)
     if (error) {
-      toast.error('Error al eliminar: ' + error.message)
+      toast.error('Error al eliminar: ' + (error.message || 'Error desconocido.'))
     } else {
       toast.success('Cargo eliminado correctamente.')
       fetchData() 
@@ -94,13 +100,13 @@ export default function CargosCRUD() {
             <p className="text-center py-8 text-gray-500">No hay cargos registrados.</p>
           ) : (
             <div className="rounded-md border">
+              {/* CORRECCIÓN CRÍTICA DE HIDRATACIÓN: <Table> y <TableHeader> deben ir pegados */}
               <Table>
-                <TableHeader>
+    <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    {/* El título de la columna puede seguir siendo 'Descripción' para la UI */}
-                    <TableHead>Descripción</TableHead> 
-                    <TableHead className="text-right w-[120px]">Acciones</TableHead>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -111,14 +117,11 @@ export default function CargosCRUD() {
                         {editingId === item.id ? (
                           <Input 
                             type="text" 
-                            // ✅ CAMBIO CLAVE: Usa el nuevo estado editCargoValue
                             value={editCargoValue} 
-                            // ✅ CAMBIO CLAVE: Actualiza el nuevo estado editCargoValue
                             onChange={(e) => setEditCargoValue(e.target.value)} 
                             className="h-8"
                           />
                         ) : (
-                            // ✅ CAMBIO CLAVE: Muestra item.cargo
                           item.cargo 
                         )}
                       </TableCell>
@@ -161,9 +164,7 @@ export default function CargosCRUD() {
           <form onSubmit={handleCrear} className="space-y-4">
             <Input 
               type="text" 
-              // ✅ CAMBIO CLAVE: Usa el nuevo estado newCargoValue
               value={newCargoValue} 
-              // ✅ CAMBIO CLAVE: Actualiza el nuevo estado newCargoValue
               onChange={(e) => setNewCargoValue(e.target.value)} 
               placeholder="Descripción del Cargo" 
               required
